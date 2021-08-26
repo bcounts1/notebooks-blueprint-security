@@ -95,7 +95,7 @@ resource "google_notebooks_instance" "caip_nbk_p_trusted" {
     image_family = "tf-latest-cpu"
   }
 
-  instance_owners = [each.value]
+  instance_owners = [split(":",each.value)[1]]
 
   post_startup_script = format("%s/%s", module.bootstrap.bucket.url, google_storage_bucket_object.postscript.name)
 
@@ -122,7 +122,7 @@ resource "google_notebooks_instance" "caip_nbk_p_trusted" {
   metadata = {
     terraform                  = "true"
     proxy-mode                 = "mail"
-    proxy-user-mail            = each.value
+    proxy-user-mail            = split(":",each.value)[1]
     notebook-disable-root      = "true"
     notebook-disable-downloads = "true"
     notebook-disable-nbconvert = "true"
@@ -187,11 +187,11 @@ module "regular_service_perimeter_higher_trust" {
   policy         = var.default_policy_id
   perimeter_name = format("higher_trust_notebooks_%s", random_string.random_name.result)
   description    = "Perimeter shielding Notebook projects with PII data"
-  resources = [
+  resources = distinct([
     "${data.google_project.trusted_data.number}",
     "${data.google_project.trusted_analytics.number}",
     "${data.google_project.trusted_kms.number}",
-  ]
+  ])
   access_levels = [module.access_level_members_higher_trust.name]
   restricted_services = [
     "compute.googleapis.com",
